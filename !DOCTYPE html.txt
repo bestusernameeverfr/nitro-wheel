@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rainbow Spinner</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #f0f0f0;
+    }
+    canvas {
+      margin-top: 10px;
+    }
+    input {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+      text-align: center;
+    }
+    #namesList {
+      position: absolute;
+      left: 20px;
+      top: 120px;
+    }
+    #winner {
+      margin-top: 10px;
+      font-size: 20px;
+      color: green;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <button onclick="spinWheel()">Spin</button>
+  <canvas id="wheel" width="400" height="400"></canvas>
+  <input type="text" id="userInput" placeholder="type user" onkeydown="checkEnter(event)">
+  <div id="winner"></div>
+  <div id="namesList"></div>
+
+  <script>
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+    const userInput = document.getElementById('userInput');
+    const namesList = document.getElementById('namesList');
+    const winnerDisplay = document.getElementById('winner');
+    let names = [];
+    let angle = 0;
+    let spinning = false;
+
+    function drawWheel() {
+      const numSegments = names.length;
+      const angleStep = (2 * Math.PI) / numSegments;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < numSegments; i++) {
+        const start = angle + i * angleStep;
+        const end = start + angleStep;
+        ctx.beginPath();
+        ctx.moveTo(200, 200);
+        ctx.arc(200, 200, 180, start, end);
+        ctx.fillStyle = `hsl(${(i * 360 / numSegments)}, 100%, 50%)`;
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.save();
+        ctx.translate(200, 200);
+        ctx.rotate(start + angleStep / 2);
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText(names[i], 160, 10);
+        ctx.restore();
+      }
+    }
+
+    function checkEnter(event) {
+      if (event.key === 'Enter' && userInput.value.trim()) {
+        const name = userInput.value.trim();
+        names.push(name);
+        updateNamesList();
+        userInput.value = '';
+        drawWheel();
+      }
+    }
+
+    function updateNamesList() {
+      namesList.innerHTML = names.map(n => `<div>${n}</div>`).join('');
+    }
+
+    function spinWheel() {
+      if (spinning || names.length === 0) return;
+      spinning = true;
+      winnerDisplay.textContent = '';
+
+      let spinAngle = Math.random() * 360 + 360 * 5;
+      let duration = 8000;
+      let startTime = null;
+
+      function animate(time) {
+        if (!startTime) startTime = time;
+        let elapsed = time - startTime;
+        let t = Math.min(elapsed / duration, 1);
+
+        let easedAngle;
+        if (t < 0.75) {
+          easedAngle = spinAngle * t * (4 - 3 * t); // Ease out cubic
+        } else {
+          easedAngle = spinAngle * (1 - Math.pow(1 - t, 3)); // Slows down
+        }
+
+        angle = (easedAngle * Math.PI) / 180;
+        drawWheel();
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          const degrees = (angle * 180 / Math.PI) % 360;
+          const index = Math.floor((names.length - (degrees / 360) * names.length)) % names.length;
+          const winner = names[index >= 0 ? index : (index + names.length) % names.length];
+          winnerDisplay.textContent = `${winner} is the winner!!`;
+          spinning = false;
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>
